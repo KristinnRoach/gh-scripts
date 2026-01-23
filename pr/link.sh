@@ -339,7 +339,7 @@ if [[ -n "$ISSUE_NUMBER" && "$ISSUE_LINK_TYPE" != "skip" ]]; then
   echo -e "${YELLOW}Linking to issue...${NC}"
 
   # Get current PR body
-  CURRENT_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO_FULL" --json body --jq '.body' 2>/dev/null)
+  CURRENT_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO_FULL" --json body --jq '.body // ""' 2>/dev/null)
 
   # Build link text
   if [[ "$ISSUE_LINK_TYPE" == "closes" ]]; then
