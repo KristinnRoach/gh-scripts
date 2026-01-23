@@ -330,9 +330,12 @@ fi
 
 # Link PR to project
 echo -e "${YELLOW}Linking PR to project...${NC}"
-gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$PR_URL" && \
-  echo -e "${GREEN}Linked PR #$PR_NUMBER to project${NC}" || \
+if gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$PR_URL"; then
+  echo -e "${GREEN}Linked PR #$PR_NUMBER to project${NC}"
+else
   echo -e "${RED}Failed to link PR to project${NC}"
+  exit 1
+fi
 
 # Link to issue if selected
 if [[ -n "$ISSUE_NUMBER" && "$ISSUE_LINK_TYPE" != "skip" ]]; then
@@ -358,7 +361,10 @@ $LINK_TEXT"
   fi
 
   # Use REST API directly to avoid deprecated projectCards GraphQL query
-  gh api "repos/$REPO_FULL/pulls/$PR_NUMBER" --method PATCH -f body="$NEW_BODY" > /dev/null && \
-    echo -e "${GREEN}Added '$LINK_TEXT' to PR body${NC}" || \
+  if gh api "repos/$REPO_FULL/pulls/$PR_NUMBER" --method PATCH -f body="$NEW_BODY" > /dev/null; then
+    echo -e "${GREEN}Added '$LINK_TEXT' to PR body${NC}"
+  else
     echo -e "${RED}Failed to update PR body${NC}"
+    exit 1
+  fi
 fi
