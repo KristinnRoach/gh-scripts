@@ -357,7 +357,8 @@ if [[ -n "$ISSUE_NUMBER" && "$ISSUE_LINK_TYPE" != "skip" ]]; then
 $LINK_TEXT"
   fi
 
-  gh pr edit "$PR_NUMBER" --repo "$REPO_FULL" --body "$NEW_BODY" && \
+  # Use REST API directly to avoid deprecated projectCards GraphQL query
+  gh api "repos/$REPO_FULL/pulls/$PR_NUMBER" --method PATCH -f body="$NEW_BODY" > /dev/null && \
     echo -e "${GREEN}Added '$LINK_TEXT' to PR body${NC}" || \
     echo -e "${RED}Failed to update PR body${NC}"
 fi
