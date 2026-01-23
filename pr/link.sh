@@ -200,8 +200,16 @@ else
       done < <(echo "$PROJECTS_JSON" | jq -r --arg num "$DEFAULT_PROJECT_NUM" \
         '.projects[] | select(.number != ($num | tonumber)) | "\(.number)\t\(.title)"')
     else
+      FIRST_LINE=true
       while IFS= read -r line; do
-        [[ -n "$line" ]] && PROJECT_LIST+=$'\n'"$line"
+        if [[ -n "$line" ]]; then
+          if [[ "$FIRST_LINE" == true ]]; then
+            PROJECT_LIST="$line"
+            FIRST_LINE=false
+          else
+            PROJECT_LIST+=$'\n'"$line"
+          fi
+        fi
       done < <(echo "$PROJECTS_JSON" | jq -r '.projects[] | "\(.number)\t\(.title)"')
     fi
 
