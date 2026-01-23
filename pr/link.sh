@@ -201,7 +201,13 @@ else
         '.projects[] | select(.number != ($num | tonumber)) | "\(.number)\t\(.title)"')
     else
       while IFS= read -r line; do
-        [[ -n "$line" ]] && PROJECT_LIST+=$'\n'"$line"
+        if [[ -n "$line" ]]; then
+          if [[ -z "$PROJECT_LIST" ]]; then
+            PROJECT_LIST="$line"
+          else
+            PROJECT_LIST+=$'\n'"$line"
+          fi
+        fi
       done < <(echo "$PROJECTS_JSON" | jq -r '.projects[] | "\(.number)\t\(.title)"')
     fi
 
