@@ -36,11 +36,14 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -h|--help)
-      echo "ghpr-link - Link a PR to a GitHub Project"
+      echo "ghpr-link - Link a PR to a GitHub Project and optionally an Issue"
       echo ""
       echo "Usage: ghpr-link [pr-number] [options]"
       echo ""
       echo "If no PR number is provided, opens interactive selection."
+      echo "After selecting a project, you can optionally link to an issue:"
+      echo "  - Closes #X    (auto-close issue when PR merges)"
+      echo "  - Relates to #X (reference only)"
       echo ""
       echo "Options:"
       echo "  --dry-run     Preview without linking"
@@ -236,11 +239,92 @@ if [[ -z "$PROJECT_NUMBER" ]]; then
   exit 1
 fi
 
+# Optional: Link to an issue
+ISSUE_LINK_TYPE=""
+ISSUE_NUMBER=""
+
+if command -v fzf &>/dev/null; then
+  echo -e "${YELLOW}Link to an issue? (optional)${NC}"
+
+  LINK_OPTIONS="skip	Skip - Don't link to an issue
+closes	Closes #X - Auto-close issue when PR merges
+relates	Relates to #X - Reference only (no auto-close)"
+
+  while true; do
+    set +e
+    SELECTED_LINK=$(echo "$LINK_OPTIONS" | \
+      fzf --height=20% \
+          --layout=reverse \
+          --prompt="Issue link: " \
+          --header="Enter=select | Esc=abort" \
+          --with-nth=2.. \
+          --delimiter=$'\t' \
+          --no-sort \
+      2>/dev/null)
+    FZF_EXIT=${PIPESTATUS[1]}
+    set -e
+
+    if [[ $FZF_EXIT -eq 1 ]]; then
+      prompt_abort
+      continue
+    fi
+    break
+  done
+
+  ISSUE_LINK_TYPE=$(echo "$SELECTED_LINK" | cut -f1)
+
+  if [[ "$ISSUE_LINK_TYPE" != "skip" && -n "$ISSUE_LINK_TYPE" ]]; then
+    echo -e "${YELLOW}Fetching issues...${NC}"
+    ISSUES=$(gh issue list --repo "$REPO_FULL" --state open --json number,title --jq '.[] | "\(.number)\t#\(.number) \(.title)"' 2>/dev/null)
+
+    if [[ -z "$ISSUES" ]]; then
+      echo -e "${YELLOW}No open issues found. Skipping issue link.${NC}"
+      ISSUE_LINK_TYPE="skip"
+    else
+      echo -e "${YELLOW}Select issue:${NC}"
+
+      while true; do
+        set +e
+        SELECTED_ISSUE=$(echo "$ISSUES" | \
+          fzf --height=40% \
+              --layout=reverse \
+              --prompt="Issue: " \
+              --header="Enter=select | Esc=skip" \
+              --with-nth=2.. \
+              --delimiter=$'\t' \
+          2>/dev/null)
+        FZF_EXIT=${PIPESTATUS[1]}
+        set -e
+
+        if [[ $FZF_EXIT -eq 1 ]]; then
+          echo -e "${YELLOW}Skipping issue link.${NC}"
+          ISSUE_LINK_TYPE="skip"
+          break
+        fi
+        break
+      done
+
+      if [[ -n "$SELECTED_ISSUE" ]]; then
+        ISSUE_NUMBER=$(echo "$SELECTED_ISSUE" | cut -f1)
+        ISSUE_TITLE=$(echo "$SELECTED_ISSUE" | cut -f2)
+        echo -e "${BLUE}Issue:${NC}  $ISSUE_TITLE"
+      fi
+    fi
+  fi
+fi
+
 # Dry run
 if [[ "$DRY_RUN" == true ]]; then
   echo ""
   echo -e "${GREEN}=== DRY RUN ===${NC}"
   echo -e "Would link PR #$PR_NUMBER to project #$PROJECT_NUMBER"
+  if [[ -n "$ISSUE_NUMBER" && "$ISSUE_LINK_TYPE" != "skip" ]]; then
+    if [[ "$ISSUE_LINK_TYPE" == "closes" ]]; then
+      echo -e "Would add 'Closes #$ISSUE_NUMBER' to PR body"
+    else
+      echo -e "Would add 'Relates to #$ISSUE_NUMBER' to PR body"
+    fi
+  fi
   exit 0
 fi
 
@@ -249,3 +333,31 @@ echo -e "${YELLOW}Linking PR to project...${NC}"
 gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$PR_URL" && \
   echo -e "${GREEN}Linked PR #$PR_NUMBER to project${NC}" || \
   echo -e "${RED}Failed to link PR to project${NC}"
+
+# Link to issue if selected
+if [[ -n "$ISSUE_NUMBER" && "$ISSUE_LINK_TYPE" != "skip" ]]; then
+  echo -e "${YELLOW}Linking to issue...${NC}"
+
+  # Get current PR body
+  CURRENT_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO_FULL" --json body --jq '.body' 2>/dev/null)
+
+  # Build link text
+  if [[ "$ISSUE_LINK_TYPE" == "closes" ]]; then
+    LINK_TEXT="Closes #$ISSUE_NUMBER"
+  else
+    LINK_TEXT="Relates to #$ISSUE_NUMBER"
+  fi
+
+  # Append to body
+  if [[ -z "$CURRENT_BODY" ]]; then
+    NEW_BODY="$LINK_TEXT"
+  else
+    NEW_BODY="$CURRENT_BODY
+
+$LINK_TEXT"
+  fi
+
+  gh pr edit "$PR_NUMBER" --repo "$REPO_FULL" --body "$NEW_BODY" && \
+    echo -e "${GREEN}Added '$LINK_TEXT' to PR body${NC}" || \
+    echo -e "${RED}Failed to update PR body${NC}"
+fi
