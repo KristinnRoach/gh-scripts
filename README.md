@@ -26,6 +26,12 @@ git clone https://github.com/KristinnRoach/gh-scripts.git ~/kidScripts/gh
 | `gh-issue-task` | `ghi-task` | Manage issue task lists |
 | `gh-issue-help` | `ghi-help` | Show all commands |
 
+### Pull Requests (`ghpr` / `gh-pr`)
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `gh-pr-link` | `ghpr-link` | Link PR to project (+ optional issue) |
+
 ### Projects (`ghp` / `gh-project`)
 
 *Coming soon*
