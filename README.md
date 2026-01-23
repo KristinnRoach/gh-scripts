@@ -8,9 +8,8 @@ GitHub CLI helper scripts with interactive defaults.
 # Clone to your scripts directory
 git clone https://github.com/KristinnRoach/gh-scripts.git ~/kidScripts/gh
 
-# Add aliases to ~/.zshrc
-alias gh-issue="~/kidScripts/gh/issue/create.sh"
-alias ghi="~/kidScripts/gh/issue/create.sh"
+# Add to ~/.zshrc
+[ -f ~/kidScripts/gh/aliases.sh ] && source ~/kidScripts/gh/aliases.sh
 ```
 
 ## Commands
@@ -20,6 +19,7 @@ alias ghi="~/kidScripts/gh/issue/create.sh"
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `gh-issue` | `ghi` | Create issue (interactive) |
+| `gh-issue-delete` | `ghi-delete` | Delete an issue |
 | `gh-issue-close` | `ghi-close` | Close an issue |
 | `gh-issue-list` | `ghi-list` | List issues |
 | `gh-issue-move` | `ghi-move` | Move between project columns |
