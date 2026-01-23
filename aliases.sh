@@ -6,6 +6,10 @@ alias gh-issue="~/kidScripts/gh/issue/create.sh"
 alias ghi="~/kidScripts/gh/issue/create.sh"
 alias gh-issue-delete="~/kidScripts/gh/issue/delete.sh"
 alias ghi-delete="~/kidScripts/gh/issue/delete.sh"
+alias gh-issue-list="~/kidScripts/gh/issue/list-commands.sh"
+alias ghi-list="~/kidScripts/gh/issue/list-commands.sh"
+alias gh-issue-help="~/kidScripts/gh/issue/help.sh"
+alias ghi-help="~/kidScripts/gh/issue/help.sh"
 
 # Pull Requests (ghpr / gh-pr)
 alias gh-pr-link="~/kidScripts/gh/pr/link.sh"
