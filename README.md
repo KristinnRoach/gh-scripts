@@ -16,25 +16,25 @@ git clone https://github.com/KristinnRoach/gh-scripts.git ~/kidScripts/gh
 
 ### Issues (`ghi` / `gh-issue`)
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `gh-issue` | `ghi` | Create issue (interactive) |
-| `gh-issue-delete` | `ghi-delete` | Delete an issue |
-| `gh-issue-close` | `ghi-close` | Close an issue |
-| `gh-issue-list` | `ghi-list` | List issues |
-| `gh-issue-move` | `ghi-move` | Move between project columns |
-| `gh-issue-task` | `ghi-task` | Manage issue task lists |
-| `gh-issue-help` | `ghi-help` | Show all commands |
+| Command           | Alias        | Description                  |
+| ----------------- | ------------ | ---------------------------- |
+| `gh-issue`        | `ghi`        | Create issue (interactive)   |
+| `gh-issue-delete` | `ghi-delete` | Delete an issue              |
+| `gh-issue-close`  | `ghi-close`  | Close an issue               |
+| `gh-issue-list`   | `ghi-list`   | List issues                  |
+| `gh-issue-move`   | `ghi-move`   | Move between project columns |
+| `gh-issue-task`   | `ghi-task`   | Manage issue task lists      |
+| `gh-issue-help`   | `ghi-help`   | Show all commands            |
 
 ### Pull Requests (`ghpr` / `gh-pr`)
 
-| Command | Alias | Description |
-|---------|-------|-------------|
+| Command      | Alias       | Description                           |
+| ------------ | ----------- | ------------------------------------- |
 | `gh-pr-link` | `ghpr-link` | Link PR to project (+ optional issue) |
 
 ### Projects (`ghp` / `gh-project`)
 
-*Coming soon*
+_Coming soon_
 
 ## Usage
 

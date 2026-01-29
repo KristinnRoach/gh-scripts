@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh project list:*)",
+      "Bash(gh project item-list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue delete --help:*)",
+      "Bash(/Users/kristinnroachgunnarsson/kidScripts/gh/issue/delete.sh:*)",
+      "Bash(/Users/kristinnroachgunnarsson/kidScripts/gh/pr/link.sh:*)",
+      "Bash(/Users/kristinnroachgunnarsson/kidScripts/gh/issue/help.sh:*)"
+    ]
+  }
+}
