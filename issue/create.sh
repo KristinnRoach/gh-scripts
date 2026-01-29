@@ -173,20 +173,20 @@ if command -v fzf &>/dev/null; then
 
     LABEL_LIST=""
     if [[ -n "$PRESELECT_LABEL" ]]; then
-      LABEL_LIST+="${PRESELECT_LABEL}\t${PRESELECT_LABEL} (New)"
+      LABEL_LIST+="${PRESELECT_LABEL}"$'\t'"${PRESELECT_LABEL} (New)"
     fi
 
     if [[ "$PRESELECT_LABEL" != "enhancement" ]]; then
       [[ -n "$LABEL_LIST" ]] && LABEL_LIST+=$'\n'
-      LABEL_LIST+="enhancement\tDefault"
+      LABEL_LIST+="enhancement"$'\t'"Default"
     fi
 
     [[ -n "$LABEL_LIST" ]] && LABEL_LIST+=$'\n'
-    LABEL_LIST+="__NEW_LABEL__\tNew label…"
+    LABEL_LIST+="__NEW_LABEL__"$'\t'"New label…"
 
     if [[ -n "$OTHER_LABELS" ]]; then
       while IFS= read -r line; do
-        [[ -n "$line" ]] && LABEL_LIST+=$'\n'"${line}\t${line}"
+        [[ -n "$line" ]] && LABEL_LIST+=$'\n'"${line}"$'\t'"${line}"
       done < <(echo "$OTHER_LABELS")
     fi
 
@@ -231,7 +231,16 @@ if command -v fzf &>/dev/null; then
       if [[ -n "$NEW_LABEL_NAME" ]]; then
         echo -ne "${YELLOW}Label color (hex without #, e.g. 'ff6600'): ${NC}"
         read -r NEW_LABEL_COLOR
-        gh label create "$NEW_LABEL_NAME" --repo "$REPO_FULL" --color "${NEW_LABEL_COLOR:-cccccc}" 2>/dev/null || true
+        if [[ "$DRY_RUN" == true ]]; then
+          echo -e "${YELLOW}(dry-run) Would create label: ${NC}$NEW_LABEL_NAME"
+        else
+          gh label create "$NEW_LABEL_NAME" --repo "$REPO_FULL" --color "${NEW_LABEL_COLOR:-cccccc}" 2>/dev/null || true
+        fi
+        if [[ -n "$CARRY_LABELS" ]]; then
+          CARRY_LABELS=$(printf "%s\n%s\n" "$CARRY_LABELS" "$NEW_LABEL_NAME" | awk 'NF && !seen[$0]++')
+        else
+          CARRY_LABELS="$NEW_LABEL_NAME"
+        fi
         PRESELECT_LABEL="$NEW_LABEL_NAME"
         continue
       fi

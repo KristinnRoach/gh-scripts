@@ -54,6 +54,9 @@ ghi "Issue title" --open  # Opens in browser after creation
 
 # Tips
 # In the label picker, choose "New label…" (or press Ctrl+N) to create a label and return with it preselected.
+
+## Dry-run policy
+`--dry-run` must never have side-effects unless explicitly documented and made obvious during execution.
 ```
 
 ## Requirements
