@@ -51,6 +51,9 @@ ghi "Issue title" --dry-run
 # Flags
 ghi -t "Title" -d "Description" -e "Error logs"
 ghi "Issue title" --open  # Opens in browser after creation
+
+# Tips
+# In the label picker, choose "New label…" (or press Ctrl+N) to create a label and return with it preselected.
 ```
 
 ## Requirements

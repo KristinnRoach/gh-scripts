@@ -159,24 +159,55 @@ LABELS="enhancement"
 if command -v fzf &>/dev/null; then
   echo -e "${YELLOW}Labels (Tab=select, Enter=confirm):${NC}"
 
-  # Get all labels, put "enhancement" at top with (Default) hint, filter it from the rest
-  ALL_LABELS=$(gh label list --repo "$REPO_FULL" --json name -q '.[].name' 2>/dev/null)
-  OTHER_LABELS=$(echo "$ALL_LABELS" | grep -v "^enhancement$" || true)
-  LABEL_LIST="enhancement (Default)"$'\n'"$OTHER_LABELS"
+  PRESELECT_LABEL=""
+  CARRY_LABELS=""
 
   # Loop until user makes a selection or confirms abort
   while true; do
+    # Get all labels, put "enhancement" at top with (Default) hint, filter it from the rest
+    ALL_LABELS=$(gh label list --repo "$REPO_FULL" --json name -q '.[].name' 2>/dev/null)
+    OTHER_LABELS=$(echo "$ALL_LABELS" | grep -v "^enhancement$" || true)
+    if [[ -n "$PRESELECT_LABEL" ]]; then
+      OTHER_LABELS=$(echo "$OTHER_LABELS" | grep -v "^${PRESELECT_LABEL}$" || true)
+    fi
+
+    LABEL_LIST=""
+    if [[ -n "$PRESELECT_LABEL" ]]; then
+      LABEL_LIST+="${PRESELECT_LABEL}\t${PRESELECT_LABEL} (New)"
+    fi
+
+    if [[ "$PRESELECT_LABEL" != "enhancement" ]]; then
+      [[ -n "$LABEL_LIST" ]] && LABEL_LIST+=$'\n'
+      LABEL_LIST+="enhancement\tDefault"
+    fi
+
+    [[ -n "$LABEL_LIST" ]] && LABEL_LIST+=$'\n'
+    LABEL_LIST+="__NEW_LABEL__\tNew label…"
+
+    if [[ -n "$OTHER_LABELS" ]]; then
+      while IFS= read -r line; do
+        [[ -n "$line" ]] && LABEL_LIST+=$'\n'"${line}\t${line}"
+      done < <(echo "$OTHER_LABELS")
+    fi
+
     set +e
-    SELECTED_LABELS=$(echo "$LABEL_LIST" | \
-      fzf --multi \
-          --height=40% \
-          --layout=reverse \
-          --prompt="Labels: " \
-          --header="Tab=select │ Enter=confirm │ Esc=abort" \
-          --bind="ctrl-n:execute(echo '__NEW_LABEL__')+abort" \
-          --no-sort \
-          --preview-window=hidden \
-      2>/dev/null)
+    FZF_ARGS=(
+      --multi
+      --height=40%
+      --layout=reverse
+      --prompt="Labels: "
+      --header="Tab=select │ Enter=confirm │ Esc=abort"
+      --bind="ctrl-n:execute(echo '__NEW_LABEL__')+abort"
+      --with-nth=2..
+      --delimiter=$'\t'
+      --no-sort
+      --preview-window=hidden
+    )
+    if [[ -n "$PRESELECT_LABEL" ]]; then
+      FZF_ARGS+=(--bind="start:toggle")
+    fi
+
+    SELECTED_LABELS_RAW=$(echo "$LABEL_LIST" | fzf "${FZF_ARGS[@]}" 2>/dev/null)
     FZF_EXIT=${PIPESTATUS[1]}
     set -e
 
@@ -185,25 +216,39 @@ if command -v fzf &>/dev/null; then
       prompt_abort
       continue
     fi
+
+    SELECTED_LABELS=$(echo "$SELECTED_LABELS_RAW" | cut -f1)
+
+    if echo "$SELECTED_LABELS" | grep -q "^__NEW_LABEL__$"; then
+      # Carry forward any existing selections (excluding the new-label sentinel)
+      SELECTED_LABELS_NO_NEW=$(echo "$SELECTED_LABELS" | grep -v "^__NEW_LABEL__$" || true)
+      if [[ -n "$CARRY_LABELS" || -n "$SELECTED_LABELS_NO_NEW" ]]; then
+        CARRY_LABELS=$(printf "%s\n%s\n" "$CARRY_LABELS" "$SELECTED_LABELS_NO_NEW" | awk 'NF && !seen[$0]++')
+      fi
+
+      echo -ne "${YELLOW}New label name: ${NC}"
+      read -r NEW_LABEL_NAME
+      if [[ -n "$NEW_LABEL_NAME" ]]; then
+        echo -ne "${YELLOW}Label color (hex without #, e.g. 'ff6600'): ${NC}"
+        read -r NEW_LABEL_COLOR
+        gh label create "$NEW_LABEL_NAME" --repo "$REPO_FULL" --color "${NEW_LABEL_COLOR:-cccccc}" 2>/dev/null || true
+        PRESELECT_LABEL="$NEW_LABEL_NAME"
+        continue
+      fi
+    fi
+
+    if [[ -n "$CARRY_LABELS" || -n "$SELECTED_LABELS" ]]; then
+      FINAL_SELECTED_LABELS=$(printf "%s\n%s\n" "$CARRY_LABELS" "$SELECTED_LABELS" | awk 'NF && !seen[$0]++')
+    else
+      FINAL_SELECTED_LABELS=""
+    fi
+
+    if [[ -n "$FINAL_SELECTED_LABELS" ]]; then
+      # Convert newlines to commas
+      LABELS=$(echo "$FINAL_SELECTED_LABELS" | tr '\n' ',' | sed 's/,$//')
+    fi
     break
   done
-
-  # Clean up the (Default) suffix
-  SELECTED_LABELS=$(echo "$SELECTED_LABELS" | sed 's/ (Default)$//')
-
-  if [[ "$SELECTED_LABELS" == "__NEW_LABEL__" ]]; then
-    echo -ne "${YELLOW}New label name: ${NC}"
-    read -r NEW_LABEL_NAME
-    if [[ -n "$NEW_LABEL_NAME" ]]; then
-      echo -ne "${YELLOW}Label color (hex without #, e.g. 'ff6600'): ${NC}"
-      read -r NEW_LABEL_COLOR
-      gh label create "$NEW_LABEL_NAME" --repo "$REPO_FULL" --color "${NEW_LABEL_COLOR:-cccccc}" 2>/dev/null || true
-      LABELS="$NEW_LABEL_NAME"
-    fi
-  elif [[ -n "$SELECTED_LABELS" ]]; then
-    # Convert newlines to commas
-    LABELS=$(echo "$SELECTED_LABELS" | tr '\n' ',' | sed 's/,$//')
-  fi
 fi
 
 echo -e "${BLUE}Labels: ${NC}$LABELS"
